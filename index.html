@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftType | Pro Speed Test</title>
+    <style>
+        /* --- CSS STYLING --- */
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg: #0b0e14;
+            --card-bg: #161b22;
+            --text-main: #e6edf3;
+            --text-dim: #8b949e;
+            --correct: #4ade80;
+            --wrong: #f87171;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 750px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1.8rem; font-weight: bold; color: var(--primary); display: block; }
+
+        .typing-box {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        #display-text {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            color: var(--text-dim);
+            margin-bottom: 1rem;
+            min-height: 100px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+
+        .char-correct { color: var(--text-main); }
+        .char-wrong { color: var(--wrong); background: rgba(248, 113, 113, 0.2); border-radius: 2px; }
+        .char-current { border-left: 2px solid var(--primary); animation: blink 1s infinite; }
+
+        @keyframes blink { 50% { border-color: transparent; } }
+
+        #input-field {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        #input-field:focus { border-color: var(--secondary); }
+
+        .btn-group { text-align: center; }
+        #reset-btn {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            border: none;
+            padding: 0.8rem 2.5rem;
+            border-radius: 50px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        #reset-btn:hover { opacity: 0.9; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>SwiftType</h1>
+    </header>
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-label">WPM</span>
+            <span id="wpm" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Accuracy</span>
+            <span id="accuracy" class="stat-value">100%</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Time Left</span>
+            <span id="timer" class="stat-value">60s</span>
+        </div>
+    </div>
+
+    <div class="typing-box">
+        <div id="display-text"></div>
+        <input type="text" id="input-field" placeholder="Start typing..." autofocus autocomplete="off">
+    </div>
+
+    <div class="btn-group">
+        <button id="reset-btn">Restart Test</button>
+    </div>
+</div>
+
+<script>
+    /* --- JAVASCRIPT LOGIC --- */
+    const quotes = [
+        "The only way to do great work is to love what you do.",
+        "Success is not how high you have climbed, but how you make a positive difference.",
+        "Intelligence is the ability to adapt to change.",
+        "Code is like humor. When you have to explain it, it’s bad.",
+        "Stay hungry, stay foolish."
+    ];
+
+    let timer;
+    let timeLimit = 60;
+    let timeElapsed = 0;
+    let isStarted = false;
+    let mistakes = 0;
+
+    const display = document.getElementById('display-text');
+    const input = document.getElementById('input-field');
+    const wpmLabel = document.getElementById('wpm');
+    const accLabel = document.getElementById('accuracy');
+    const timerLabel = document.getElementById('timer');
+    const resetBtn = document.getElementById('reset-btn');
+
+    function loadQuote() {
+        const randIndex = Math.floor(Math.random() * quotes.length);
+        display.innerHTML = "";
+        quotes[randIndex].split('').forEach(char => {
+            const span = document.createElement('span');
+            span.innerText = char;
+            display.appendChild(span);
+        });
+        display.querySelectorAll('span')[0].classList.add('char-current');
+    }
+
+    function startTest() {
+        isStarted = true;
+        timer = setInterval(() => {
+            if (timeElapsed < timeLimit) {
+                timeElapsed++;
+                timerLabel.innerText = (timeLimit - timeElapsed) + "s";
+                updateStats();
+            } else {
+                finishTest();
+            }
+        }, 1000);
+    }
+
+    function updateStats() {
+        // WPM calculation: (Correct Chars / 5) / (Minutes)
+        const typedEntries = input.value.length;
+        const wpm = Math.round((typedEntries / 5) / (timeElapsed / 60));
+        wpmLabel.innerText = wpm > 0 && isFinite(wpm) ? wpm : 0;
+    }
+
+    input.addEventListener('input', () => {
+        const charSpans = display.querySelectorAll('span');
+        const typedChars = input.value.split('');
+
+        if (!isStarted) startTest();
+
+        mistakes = 0;
+        charSpans.forEach((span, i) => {
+            const char = typedChars[i];
+            span.classList.remove('char-current');
+
+            if (char == null) {
+                span.classList.remove('char-correct', 'char-wrong');
+            } else if (char === span.innerText) {
+                span.classList.add('char-correct');
+                span.classList.remove('char-wrong');
+            } else {
+                mistakes++;
+                span.classList.add('char-wrong');
+                span.classList.remove('char-correct');
+            }
+        });
+
+        // Set cursor
+        if (typedChars.length < charSpans.length) {
+            charSpans[typedChars.length].classList.add('char-current');
+        }
+
+        // Accuracy
+        let acc = Math.round(((typedChars.length - mistakes) / typedChars.length) * 100);
+        accLabel.innerText = acc >= 0 ? acc + "%" : "100%";
+
+        // Auto-finish if quote is complete
+        if (typedChars.length === charSpans.length) finishTest();
+    });
+
+    function finishTest() {
+        clearInterval(timer);
+        input.disabled = true;
+    }
+
+    resetBtn.addEventListener('click', () => {
+        clearInterval(timer);
+        timeElapsed = 0;
+        isStarted = false;
+        input.disabled = false;
+        input.value = "";
+        timerLabel.innerText = "60s";
+        wpmLabel.innerText = "0";
+        accLabel.innerText = "100%";
+        loadQuote();
+        input.focus();
+    });
+
+    // Initial Load
+    loadQuote();
+</script>
+
+</body>
+</html>
